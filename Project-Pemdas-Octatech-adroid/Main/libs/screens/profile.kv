@@ -1,0 +1,204 @@
+<ChangePasswordContent>:
+    orientation: "vertical"
+    spacing: "12dp"
+    size_hint_y: None
+    height: "140dp"
+
+    MDTextField:
+        id: new_password
+        mode: "outlined"
+        MDTextFieldHintText:
+            text: "Password Baru"
+            font_name:"Poppins-Bold"
+
+    MDTextField:
+        id: confirm_password
+        mode: "outlined"
+        MDTextFieldHintText:
+            text: "Konfirmasi Password"
+            font_name:"Poppins-Bold"
+
+<ProfileScreen>:
+    md_bg_color: [0.98, 0.98, 0.98, 1]  # Very light grey background
+
+    MDBoxLayout:
+        orientation: "vertical"
+
+        # --- Custom Top App Bar ---
+        MDBoxLayout:
+            adaptive_height: True
+            padding: "12dp"
+            spacing: "12dp"
+            md_bg_color: [1, 1, 1, 1]
+            
+            # Back Button
+            MDButton:
+                style: "text"
+                theme_width: "Custom"
+                size_hint: None, None
+                size: "48dp", "48dp"
+                pos_hint: {"center_y": .5}
+                on_release: root.back_to_home()
+                
+                MDButtonIcon:
+                    icon: "arrow-left"
+                    pos_hint: {"center_x": .5, "center_y": .5}
+
+            MDLabel:
+                text: "My Profile"
+                font_name:"Poppins-Bold"
+                role: "large"
+                bold: True
+                pos_hint: {"center_y": .5}
+                valign: "center"
+
+            MDButton:
+                style: "text"
+                theme_width: "Custom"
+                size_hint: None, None
+                size: "48dp", "48dp"
+                pos_hint: {"center_y": .5}
+                on_release: root.logout()
+                
+                MDButtonIcon:
+                    icon: "logout"
+                    theme_icon_color: "Custom"
+                    icon_color: "red"
+                    pos_hint: {"center_x": .5, "center_y": .5}
+
+        # --- Main Content ---
+        ScrollView:
+            do_scroll_x: False
+            
+            MDBoxLayout:
+                orientation: "vertical"
+                adaptive_height: True
+                padding: "24dp"
+                spacing: "24dp"
+                
+                # --- Profile Header Section ---
+                MDCard:
+                    style: "elevated"
+                    size_hint: None, None
+                    size: "300dp", "300dp"
+                    pos_hint: {"center_x": .5}
+                    padding: "24dp"
+                    radius: [24,]
+                    orientation: "vertical"
+                    spacing: "16dp"
+                    md_bg_color: [1, 1, 1, 1]
+                    
+                    # Avatar Wrapper
+                    MDRelativeLayout:
+                        size_hint: None, None
+                        size: "140dp", "140dp"
+                        pos_hint: {"center_x": .5}
+                        
+                        MDCard:
+                            size_hint: 1, 1
+                            radius: [70,]
+                            md_bg_color: [0.95, 0.95, 0.95, 1]
+                            clip_children: True
+                            
+                            FitImage:
+                                id: profile_image
+                                source: ""
+                                size_hint: 1, 1
+                                pos_hint: {"center_x": .5, "center_y": .5}
+                        
+                        # Camera Fab
+                        MDButton:
+                            style: "tonal"
+                            theme_width: "Custom" 
+                            size_hint: None, None
+                            width: "40dp"
+                            height: "40dp"
+                            radius: [20,]
+                            pos_hint: {"right": 1, "bottom": 0}
+                            on_release: root.open_file_chooser()
+                            
+                            MDButtonIcon:
+                                icon: "camera"
+                                pos_hint: {"center_x": .5, "center_y": .5}
+
+                    # Username Display
+                    MDBoxLayout:
+                        orientation: "vertical"
+                        adaptive_height: True
+                        spacing: "4dp"
+                        
+                        MDLabel:
+                            id: username_label
+                            text: "Guest"
+                            halign: "center"
+                            # font_style: "Headline" # Override KivyMD style
+                            font_name: "Poppins-Bold"
+                            font_size: "24sp"
+                            role: "small"
+                            bold: True
+                            adaptive_height: True
+                            
+                        MDLabel:
+                            text: "Member"
+                            halign: "center"
+                            font_style: "Label"
+                            role: "medium"
+                            theme_text_color: "Hint"
+                            adaptive_height: True
+
+                # --- Settings Section ---
+                MDLabel:
+                    text: "Account Settings"
+                    font_name:"Poppins-Bold"
+                    font_style: "Title"
+                    role: "medium"
+                    bold: True
+                    adaptive_height: True
+                    padding_y: "12dp"
+
+                # Edit Username Card
+                MDCard:
+                    style: "outlined"
+                    adaptive_height: True
+                    padding: "16dp"
+                    radius: [16,]
+                    orientation: "vertical"
+                    spacing: "12dp"
+                    md_bg_color: [1, 1, 1, 1]
+                    theme_line_color: "Custom"
+                    line_color: [0.9, 0.9, 0.9, 1]
+
+                    MDTextField:
+                        id: new_username_input
+                        mode: "filled"
+                        
+                        MDTextFieldHintText:
+                            text: "Change Username"
+                        
+                        MDTextFieldLeadingIcon:
+                            icon: "account-edit-outline"
+
+                    MDButton:
+                        style: "filled"
+                        pos_hint: {"right": 1}
+                        on_release: root.update_username()
+                        
+                        MDButtonText:
+                            text: "Update Profile"
+
+                # Change Password Button (Full Width)
+                MDButton:
+                    style: "tonal"
+                    pos_hint: {"center_x": .5}
+                    size_hint_x: 1
+                    height: "56dp"
+                    on_release: root.show_change_password_dialog()
+                    
+                    MDButtonIcon:
+                        icon: "lock-reset"
+                    
+                    MDButtonText:
+                        text: "Change Password"
+                        font_name:"Poppins-Bold"
+
+                    
