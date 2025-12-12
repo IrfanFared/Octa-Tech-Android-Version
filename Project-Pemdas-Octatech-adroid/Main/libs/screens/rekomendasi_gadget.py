@@ -1,5 +1,5 @@
 import os
-import pandas as pd
+import csv
 import re
 import webbrowser
 from kivy.lang import Builder
@@ -21,7 +21,7 @@ from kivymd.uix.snackbar import MDSnackbar, MDSnackbarText
 # ==========================================
 class GadgetDataManager:
     def __init__(self, csv_path=None):
-        self.df = pd.DataFrame()
+        self.data = []  # Changed from pandas DataFrame to list of dicts
         target_filename = 'database(Laptop).csv'
         
         possible_paths = [
@@ -39,19 +39,30 @@ class GadgetDataManager:
 
         if self.final_path:
             try:
-                self.df = pd.read_csv(self.final_path, sep=';')
-                self.df.columns = self.df.columns.str.strip()
-                if 'Image 3' in self.df.columns:
-                    self.df.rename(columns={'Image 3': 'Image3'}, inplace=True)
-
-                if 'Harga' in self.df.columns:
-                    self.df['CleanPrice'] = self.df['Harga'].apply(self._clean_price)
-                if 'RAM' in self.df.columns:
-                    self.df['CleanRAM'] = self.df['RAM'].apply(self._clean_ram)
-                if 'Storage' in self.df.columns:
-                    self.df['CleanStorage'] = self.df['Storage'].apply(self._clean_storage)
+                # Read CSV using built-in csv module
+                with open(self.final_path, 'r', encoding='utf-8') as csvfile:
+                    reader = csv.DictReader(csvfile, delimiter=';')
+                    self.data = list(reader)
+                    
+                # Clean up column names (strip whitespace)
+                self.data = [{k.strip(): v for k, v in row.items()} for row in self.data]
                 
-                print(f"DEBUG: Sukses load {len(self.df)} produk.")
+                # Rename Image 3 to Image3 if exists
+                self.data = [
+                    {'Image3' if k == 'Image 3' else k: v for k, v in row.items()}
+                    for row in self.data
+                ]
+                
+                # Add calculated fields
+                for row in self.data:
+                    if 'Harga' in row:
+                        row['CleanPrice'] = self._clean_price(row['Harga'])
+                    if 'RAM' in row:
+                        row['CleanRAM'] = self._clean_ram(row['RAM'])
+                    if 'Storage' in row:
+                        row['CleanStorage'] = self._clean_storage(row['Storage'])
+                
+                print(f"DEBUG: Sukses load {len(self.data)} produk.")
             except Exception as e:
                 print(f"DEBUG: Error baca CSV: {e}")
         else:
@@ -79,25 +90,33 @@ class GadgetDataManager:
         except: return 0
 
     def filter_laptops(self, budget_range=None, cpu_type=None, ram_size=None, storage_size=None):
-        if self.df.empty: return self.df
-        filtered = self.df.copy()
+        if not self.data: return []
+        filtered = self.data.copy()
         
         if budget_range:
             min_b, max_b = budget_range
-            filtered = filtered[(filtered['CleanPrice'] >= min_b) & (filtered['CleanPrice'] <= max_b)]
+            filtered = [row for row in filtered 
+                       if min_b <= row.get('CleanPrice', 0) <= max_b]
+        
         if cpu_type and cpu_type != "Semua":
-            filtered = filtered[filtered['CPU'].str.contains(cpu_type, case=False, na=False)]
+            filtered = [row for row in filtered 
+                       if cpu_type.lower() in row.get('CPU', '').lower()]
+        
         if ram_size and ram_size != "Semua":
             try:
                 user_ram = int(str(ram_size).replace("GB", "").strip())
-                filtered = filtered[filtered['CleanRAM'] >= user_ram]
+                filtered = [row for row in filtered 
+                           if row.get('CleanRAM', 0) >= user_ram]
             except: pass
+        
         if storage_size and storage_size != "Semua":
             try:
                 user_s = int(str(storage_size).replace("GB", "").replace("TB", "").strip())
                 if "TB" in storage_size: user_s *= 1024
-                filtered = filtered[filtered['CleanStorage'] >= user_s]
+                filtered = [row for row in filtered 
+                           if row.get('CleanStorage', 0) >= user_s]
             except: pass
+        
         return filtered
 
 # ==========================================
@@ -559,7 +578,7 @@ class GadgetRecommendationScreen(MDScreen):
         self.data_manager = GadgetDataManager()
         self.user_choices = {"budget": None, "cpu": None, "ram": None, "storage": None}
         self.current_detail_laptop = None
-        self.filtered_df = pd.DataFrame()
+        self.filtered_data = []  # Changed from DataFrame to list
 
         self.step_manager = MDScreenManager()
         self.add_widget(self.step_manager)
@@ -649,31 +668,33 @@ class GadgetRecommendationScreen(MDScreen):
         for t in ["256GB", "512GB", "1TB", "Semua"]: self._create_option_button(t, t, "storage", scr, True)
 
     def calculate_recommendation(self):
-        self.filtered_df = self.data_manager.filter_laptops(
+        self.filtered_data = self.data_manager.filter_laptops(
             self.user_choices['budget'], self.user_choices['cpu'],
             self.user_choices['ram'], self.user_choices['storage']
         )
-        self.display_results(self.filtered_df)
+        self.display_results(self.filtered_data)
 
     def apply_sort(self, sort_type):
-        if self.filtered_df.empty: return
-        df = self.filtered_df.copy()
-        if sort_type == "price_asc": df = df.sort_values(by='CleanPrice')
-        elif sort_type == "price_desc": df = df.sort_values(by='CleanPrice', ascending=False)
-        self.display_results(df)
+        if not self.filtered_data: return
+        data = self.filtered_data.copy()
+        if sort_type == "price_asc":
+            data = sorted(data, key=lambda x: x.get('CleanPrice', 0))
+        elif sort_type == "price_desc":
+            data = sorted(data, key=lambda x: x.get('CleanPrice', 0), reverse=True)
+        self.display_results(data)
 
-    def display_results(self, df):
+    def display_results(self, data):
         grid = self.step_manager.get_screen('result_screen').ids.result_grid
         grid.clear_widgets()
 
-        if df.empty:
+        if not data:
             grid.cols = 1
             grid.add_widget(MDLabel(text="Tidak ada produk yang cocok :(", halign="center"))
             return
         
         grid.cols = 1
 
-        for index, row in df.iterrows():
+        for row in data:
             img_name = str(row.get('Image1', ''))
             final_path = self.get_image_path(img_name)
             if not final_path: final_path = "https://via.placeholder.com/150"
@@ -764,7 +785,8 @@ class GadgetRecommendationScreen(MDScreen):
                 wishlist_manager = wishlist_feature.wishlist_manager
             
             if self.current_detail_laptop is not None:
-                item_dict = self.current_detail_laptop.to_dict()
+                # current_detail_laptop is already a dict, no need to convert
+                item_dict = self.current_detail_laptop if isinstance(self.current_detail_laptop, dict) else self.current_detail_laptop
                 
                 brand = str(item_dict.get('Brand', '')).strip()
                 nama = str(item_dict.get('Nama', '')).strip()

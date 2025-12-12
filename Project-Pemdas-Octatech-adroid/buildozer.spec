@@ -36,7 +36,9 @@ version = 1.0
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.3.0,kivymd==2.0.1.dev0,pillow,requests,sqlite3,pandas
+# Note: sqlite3 is built-in, no need to include it
+# pandas removed due to compilation issues on Android
+requirements = python3,kivy==2.3.0,kivymd==2.0.1.dev0,pillow,requests
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
